@@ -57,7 +57,7 @@ int
 HPCG_Finalize(void) {
   HPCG_fout.close();
 
-#ifdef HPCG_MPI
+#ifndef HPCG_NO_MPI
   // Destroy streams
   HIP_CHECK(hipStreamDestroy(stream_interior));
   HIP_CHECK(hipStreamDestroy(stream_halo));

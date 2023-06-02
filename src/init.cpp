@@ -213,7 +213,7 @@ HPCG_Init(int * argc_p, char ** *argv_p, HPCG_Params & params) {
   HIP_CHECK(hipSetDevice(params.device));
 
   // Create streams
-#ifndef HPCG_MPI
+#ifdef HPCG_NO_MPI
   stream_interior = NULL;
   stream_halo = NULL;
 #else
