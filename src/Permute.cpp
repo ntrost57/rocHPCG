@@ -250,7 +250,7 @@ __launch_bounds__(BLOCKSIZE)
 __global__ void kernel_permute_f2c(local_int_t size,
                                    const local_int_t* __restrict__ perm,
                                    const local_int_t* __restrict__ f2cOperator,
-                                   local_int_t* __restrict__ f2cperm)
+                                   local_int_t* __restrict__ f2cPerm)
 {
     local_int_t idx_coarse = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
@@ -262,7 +262,7 @@ __global__ void kernel_permute_f2c(local_int_t size,
     local_int_t idx_fine = f2cOperator[idx_coarse];
     local_int_t idx_perm = perm[idx_fine];
 
-    f2cperm[idx_coarse] = idx_perm;
+    f2cPerm[idx_coarse] = idx_perm;
 }
 
 void PermuteF2C(SparseMatrix& A)
@@ -274,7 +274,7 @@ void PermuteF2C(SparseMatrix& A)
     }
 
     // Allocate matrix array
-    HIP_CHECK(deviceMalloc((void**)&A.f2cperm, sizeof(local_int_t) * A.mgData->rc->localLength));
+    HIP_CHECK(deviceMalloc((void**)&A.f2cPerm, sizeof(local_int_t) * A.mgData->rc->localLength));
 
     // Create mapping
     dim3 blocks((A.mgData->rc->localLength - 1) / 1024 + 1);
@@ -284,5 +284,5 @@ void PermuteF2C(SparseMatrix& A)
         A.mgData->rc->localLength,
         A.perm,
         A.mgData->d_f2cOperator,
-        A.f2cperm);
+        A.f2cPerm);
 }

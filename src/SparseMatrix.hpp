@@ -216,7 +216,7 @@ inline void InitializeSparseMatrix(SparseMatrix & A, Geometry * geom) {
   A.sizes = NULL;
   A.offsets = NULL;
   A.perm = NULL;
-  A.f2cperm = NULL;
+  A.f2cPerm = NULL;
 
   return;
 }
@@ -318,7 +318,7 @@ inline void DeleteMatrix(SparseMatrix & A) {
   HIP_CHECK(deviceFree(A.diag_idx));
   HIP_CHECK(deviceFree(A.inv_diag));
   HIP_CHECK(deviceFree(A.perm));
-  HIP_CHECK(deviceFree(A.f2cperm));
+  HIP_CHECK(deviceFree(A.f2cPerm));
   HIP_CHECK(deviceFree(A.d_localToGlobalMap));
 
   delete[] A.sizes;
