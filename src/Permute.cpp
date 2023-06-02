@@ -244,3 +244,45 @@ void PermuteVector(local_int_t size, Vector& v, const local_int_t* perm)
     HIP_CHECK(deviceFree(v.d_values));
     v.d_values = buffer;
 }
+
+template <unsigned int BLOCKSIZE>
+__launch_bounds__(BLOCKSIZE)
+__global__ void kernel_permute_f2c(local_int_t size,
+                                   const local_int_t* __restrict__ perm,
+                                   const local_int_t* __restrict__ f2cOperator,
+                                   local_int_t* __restrict__ f2cperm)
+{
+    local_int_t idx_coarse = blockIdx.x * BLOCKSIZE + threadIdx.x;
+
+    if(idx_coarse >= size)
+    {
+        return;
+    }
+
+    local_int_t idx_fine = f2cOperator[idx_coarse];
+    local_int_t idx_perm = perm[idx_fine];
+
+    f2cperm[idx_coarse] = idx_perm;
+}
+
+void PermuteF2C(SparseMatrix& A)
+{
+    // If no coarse grid exists, do nothing
+    if(A.mgData == NULL)
+    {
+        return;
+    }
+
+    // Allocate matrix array
+    HIP_CHECK(deviceMalloc((void**)&A.f2cperm, sizeof(local_int_t) * A.mgData->rc->localLength));
+
+    // Create mapping
+    dim3 blocks((A.mgData->rc->localLength - 1) / 1024 + 1);
+    dim3 threads(1024);
+
+    kernel_permute_f2c<1024><<<blocks, threads>>>(
+        A.mgData->rc->localLength,
+        A.perm,
+        A.mgData->d_f2cOperator,
+        A.f2cperm);
+}

@@ -313,8 +313,6 @@ void JPLColoring(SparseMatrix& A)
         ++A.nblocks;
     }
 
-    A.ublocks = A.nblocks - 1;
-
     HIP_CHECK(deviceFree(A.d_rowHash));
 
     local_int_t* tmp_color;
@@ -346,8 +344,4 @@ void JPLColoring(SparseMatrix& A)
     HIP_CHECK(deviceFree(tmp_color));
     HIP_CHECK(deviceFree(tmp_perm));
     HIP_CHECK(deviceFree(perm));
-
-#ifndef HPCG_REFERENCE
-    --A.ublocks;
-#endif
 }

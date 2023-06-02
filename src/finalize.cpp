@@ -57,9 +57,11 @@ int
 HPCG_Finalize(void) {
   HPCG_fout.close();
 
+#ifdef HPCG_MPI
   // Destroy streams
   HIP_CHECK(hipStreamDestroy(stream_interior));
   HIP_CHECK(hipStreamDestroy(stream_halo));
+#endif
 
   // Free workspace
   HIP_CHECK(deviceFree(workspace));

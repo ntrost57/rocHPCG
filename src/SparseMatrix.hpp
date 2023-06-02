@@ -149,10 +149,10 @@ struct SparseMatrix_STRUCT {
 
   // SymGS structures
   int nblocks; //!< Number of independent sets
-  int ublocks; //!< Number of upper triangular sets
   local_int_t* sizes; //!< Number of rows of independent sets
   local_int_t* offsets; //!< Pointer to the first row of each independent set
   local_int_t* perm; //!< Permutation obtained by independent set
+  local_int_t* f2cPerm; //!< Permutation including f2c mapping
 };
 typedef struct SparseMatrix_STRUCT SparseMatrix;
 
@@ -213,10 +213,10 @@ inline void InitializeSparseMatrix(SparseMatrix & A, Geometry * geom) {
   A.inv_diag = NULL;
 
   A.nblocks = 0;
-  A.ublocks = 0;
   A.sizes = NULL;
   A.offsets = NULL;
   A.perm = NULL;
+  A.f2cperm = NULL;
 
   return;
 }
@@ -318,6 +318,7 @@ inline void DeleteMatrix(SparseMatrix & A) {
   HIP_CHECK(deviceFree(A.diag_idx));
   HIP_CHECK(deviceFree(A.inv_diag));
   HIP_CHECK(deviceFree(A.perm));
+  HIP_CHECK(deviceFree(A.f2cperm));
   HIP_CHECK(deviceFree(A.d_localToGlobalMap));
 
   delete[] A.sizes;

@@ -213,8 +213,13 @@ HPCG_Init(int * argc_p, char ** *argv_p, HPCG_Params & params) {
   HIP_CHECK(hipSetDevice(params.device));
 
   // Create streams
+#ifndef HPCG_MPI
+  stream_interior = NULL;
+  stream_halo = NULL;
+#else
   HIP_CHECK(hipStreamCreate(&stream_interior));
   HIP_CHECK(hipStreamCreate(&stream_halo));
+#endif
 
   // Initialize memory allocator
 #ifdef HPCG_MEMMGMT

@@ -39,10 +39,9 @@
 template <unsigned int BLOCKSIZE>
 __launch_bounds__(BLOCKSIZE)
 __global__ void kernel_prolongation(local_int_t size,
-                                    const local_int_t* __restrict__ f2cOperator,
                                     const double* __restrict__ coarse,
                                     double* __restrict__ fine,
-                                    const local_int_t* __restrict__ perm_fine,
+                                    const local_int_t* __restrict__ f2cPerm,
                                     const local_int_t* __restrict__ perm_coarse)
 {
     local_int_t idx_coarse = blockIdx.x * BLOCKSIZE + threadIdx.x;
@@ -52,10 +51,9 @@ __global__ void kernel_prolongation(local_int_t size,
         return;
     }
 
-    local_int_t idx_fine = __builtin_nontemporal_load(f2cOperator + idx_coarse);
     local_int_t idx_perm = __builtin_nontemporal_load(perm_coarse + idx_coarse);
 
-    fine[perm_fine[idx_fine]] += coarse[idx_perm];
+    fine[f2cPerm[idx_coarse]] += coarse[idx_perm];
 }
 
 /*!
@@ -75,10 +73,9 @@ int ComputeProlongation(const SparseMatrix& Af, Vector& xf)
     dim3 threads(128);
 
     kernel_prolongation<128><<<blocks, threads>>>(Af.mgData->rc->localLength,
-                                                  Af.mgData->d_f2cOperator,
                                                   Af.mgData->xc->d_values,
                                                   xf.d_values,
-                                                  Af.perm,
+                                                  Af.f2cPerm,
                                                   Af.Ac->perm);
 
     return 0;

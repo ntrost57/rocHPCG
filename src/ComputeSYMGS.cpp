@@ -389,7 +389,7 @@ int ComputeSYMGS(const SparseMatrix& A, const Vector& r, Vector& x)
     }
 
     // Solve U
-    for(i = A.ublocks; i >= 0; --i)
+    for(i = A.nblocks - 2; i >= 0; --i)
     {
         if(A.ell_width == 27) LAUNCH_SYMGS_SWEEP(1024, 27);
     }
@@ -422,7 +422,7 @@ int ComputeSYMGSZeroGuess(const SparseMatrix& A, const Vector& r, Vector& x)
     }
 
     // Solve U
-    for(local_int_t i = A.ublocks; i >= 0; --i)
+    for(local_int_t i = A.nblocks - 2; i >= 0; --i)
     {
         kernel_backward_sweep_0<1024><<<(A.sizes[i] - 1) / 1024 + 1, 1024>>>(
             A.localNumberOfRows,

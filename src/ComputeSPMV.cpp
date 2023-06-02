@@ -89,39 +89,36 @@ __global__ void kernel_spmv_ell_coarse(local_int_t size,
                                        local_int_t ell_width,
                                        const local_int_t* __restrict__ ell_col_ind,
                                        const double* __restrict__ ell_val,
-                                       const local_int_t* __restrict__ perm,
-                                       const local_int_t* __restrict__ f2cOperator,
+                                       const local_int_t* __restrict__ f2cPerm,
                                        const double* __restrict__ x,
                                        double* __restrict__ y)
 {
-    local_int_t gid = blockIdx.x * BLOCKSIZE + threadIdx.x;
+    local_int_t idx_coarse = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
-    if(gid >= size)
+    if(idx_coarse >= size)
     {
         return;
     }
 
-    local_int_t f2c = __builtin_nontemporal_load(f2cOperator + gid);
-    local_int_t row = __builtin_nontemporal_load(perm + f2c);
+    local_int_t idx_perm_fine = __builtin_nontemporal_load(f2cPerm + idx_coarse);
 
     double sum = 0.0;
 
+    local_int_t idx = idx_perm_fine;
+
     for(local_int_t p = 0; p < ell_width; ++p)
     {
-        local_int_t idx = p * m + row;
         local_int_t col = __builtin_nontemporal_load(ell_col_ind + idx);
 
         if(col >= 0 && col < n)
         {
             sum = fma(__builtin_nontemporal_load(ell_val + idx), __ldg(x + col), sum);
         }
-        else
-        {
-            break;
-        }
+
+        idx += m;
     }
 
-    __builtin_nontemporal_store(sum, y + row);
+    __builtin_nontemporal_store(sum, y + idx_perm_fine);
 }
 
 template <unsigned int BLOCKSIZE, unsigned int WIDTH>
@@ -262,8 +259,7 @@ int ComputeSPMV(const SparseMatrix& A, Vector& x, Vector& y)
             A.ell_width,
             A.ell_col_ind,
             A.ell_val,
-            A.perm,
-            A.mgData->d_f2cOperator,
+            A.f2cPerm,
             x.d_values,
             y.d_values);
     }

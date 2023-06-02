@@ -83,6 +83,9 @@ int OptimizeProblem(SparseMatrix & A, CGData & data, Vector & b, Vector & x, Vec
     // Permute matrix rows
     PermuteRows(A);
 
+    // Permute f2c operator
+    PermuteF2C(A);
+
     // Extract diagonal indices and inverse values
     ExtractDiagonal(A);
 
@@ -122,6 +125,9 @@ int OptimizeProblem(SparseMatrix & A, CGData & data, Vector & b, Vector & x, Vec
 
         // Permute matrix rows
         PermuteRows(*M);
+
+        // Permute f2c operator
+        PermuteF2C(*M);
 
         // Extract diagonal indices and inverse values
         ExtractDiagonal(*M);

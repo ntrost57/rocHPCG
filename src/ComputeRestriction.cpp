@@ -44,7 +44,6 @@
                                                                                                \
         kernel_fused_restrict_spmv<blocksize, width><<<blocks, threads, 0, stream_interior>>>( \
             A.mgData->rc->localLength,                                                         \
-            A.mgData->d_f2cOperator,                                                           \
             rf.d_values,                                                                       \
             A.localNumberOfRows,                                                               \
             A.localNumberOfColumns,                                                            \
@@ -52,19 +51,18 @@
             A.ell_val,                                                                         \
             xf.d_values,                                                                       \
             A.mgData->rc->d_values,                                                            \
-            A.perm,                                                                            \
+            A.f2cPerm,                                                                         \
             A.Ac->perm);                                                                       \
     }
 
 template <unsigned int BLOCKSIZE>
 __launch_bounds__(BLOCKSIZE)
 __global__ void kernel_restrict(local_int_t size,
-                                const local_int_t* __restrict__ f2cOperator,
                                 const double* __restrict__ fine,
                                 const double* __restrict__ data,
                                 double* __restrict__ coarse,
-                                const local_int_t* __restrict__ perm_fine,
-                                const local_int_t* __restrict__ perm_coarse)
+                                const local_int_t* __restrict__ perm_coarse,
+                                const local_int_t* __restrict__ f2cPerm)
 {
     local_int_t idx_coarse = blockIdx.x * BLOCKSIZE + threadIdx.x;
 
@@ -73,7 +71,7 @@ __global__ void kernel_restrict(local_int_t size,
         return;
     }
 
-    local_int_t idx_fine = perm_fine[f2cOperator[idx_coarse]];
+    local_int_t idx_fine = f2cPerm[idx_coarse];
 
     coarse[perm_coarse[idx_coarse]] = fine[idx_fine] - data[idx_fine];
 }
@@ -81,7 +79,6 @@ __global__ void kernel_restrict(local_int_t size,
 template <unsigned int BLOCKSIZE, unsigned int WIDTH>
 __launch_bounds__(BLOCKSIZE)
 __global__ void kernel_fused_restrict_spmv(local_int_t size,
-                                           const local_int_t* f2cOperator,
                                            const double* fine,
                                            local_int_t m,
                                            local_int_t n,
@@ -89,7 +86,7 @@ __global__ void kernel_fused_restrict_spmv(local_int_t size,
                                            const double* ell_val,
                                            const double* xf,
                                            double* coarse,
-                                           const local_int_t* __restrict__ perm_fine,
+                                           const local_int_t* __restrict__ f2cPerm,
                                            const local_int_t* __restrict__ perm_coarse)
 {
     local_int_t idx_coarse = blockIdx.x * BLOCKSIZE + threadIdx.x;
@@ -99,8 +96,7 @@ __global__ void kernel_fused_restrict_spmv(local_int_t size,
         return;
     }
 
-    local_int_t idx_fine      = __builtin_nontemporal_load(f2cOperator + idx_coarse);
-    local_int_t idx_perm_fine = __builtin_nontemporal_load(perm_fine + idx_fine);
+    local_int_t idx_perm_fine = __builtin_nontemporal_load(f2cPerm + idx_coarse);
     local_int_t idx_perm_coarse = __builtin_nontemporal_load(perm_coarse + idx_coarse);
 
     double sum = __builtin_nontemporal_load(fine + idx_perm_fine);
@@ -185,12 +181,11 @@ int ComputeRestriction(const SparseMatrix& A, const Vector& rf)
     dim3 threads(128);
 
     kernel_restrict<128><<<blocks, threads>>>(A.mgData->rc->localLength,
-                                              A.mgData->d_f2cOperator,
                                               rf.d_values,
                                               A.mgData->Axf->d_values,
                                               A.mgData->rc->d_values,
-                                              A.perm,
-                                              A.Ac->perm);
+                                              A.Ac->perm,
+                                              A.f2cPerm);
 
     return 0;
 }
